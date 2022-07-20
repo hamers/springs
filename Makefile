@@ -2,7 +2,7 @@ CC=gcc
 CXX=g++-11
 
 RM=rm -f
-CPPFLAGS=-g
+CPPFLAGS=-g -O3
 LDFLAGS=-g  
 LDLIBS=
 
