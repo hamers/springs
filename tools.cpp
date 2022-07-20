@@ -225,7 +225,7 @@ void Node_Collection::print()
 
 void Node_Collection::file_dump()
 {
-    int N_nodes = this->nodes.size();
+    const int N_nodes = this->nodes.size();
 
     if (this->output_file_created == false)
     {
@@ -279,7 +279,6 @@ void Node_Collection::set_up_2d_box_of_nodes(const double mass)
     const double fy = 1.0/((double) Ny);
     const double f_rand_vel = this->parameters->f_rand_vel;
     
-    Node *np;
     Vector vel_av(0,0,0);
     for (int ix=0; ix<Nx; ix++)
     {
@@ -339,13 +338,13 @@ double Node_Collection::calculate_energy()
     int i1 = 0, i2 = 0;
     for (auto np1 = this->nodes.begin(); np1 != this->nodes.end(); np1++, i1++)
     {
-        double m1 = (**np1).mass;
+        const double m1 = (**np1).mass;
         
         energy += 0.5 * m1 * (**np1).vel.norm_squared(); // kinetic energy
         
         /* Take into account gravity from a supermassive black hole (fixed at user-specified position, i.e., without back-reaction onto the SMBH. */
         Vector r_vec = (**np1).pos - parameters->SMBH_pos;
-        double r = r_vec.norm();
+        const double r = r_vec.norm();
         energy += -parameters->CONST_G * parameters->SMBH_mass / r;
 
         /* Spring-related forces */
@@ -356,14 +355,14 @@ double Node_Collection::calculate_energy()
             
             Vector d_vec = (**np2).pos - (**np1).pos; // `distance vector': points from node 1 to node 2
             Vector v_vec = (**np2).vel - (**np1).vel; // relative velocity vector
-            double d = d_vec.norm(); // distance between nodes
-            double v = v_vec.norm();
+            const double d = d_vec.norm(); // distance between nodes
+            const double v = v_vec.norm();
             Vector d_vec_hat = d_vec / d; // normalised distance vector
-            double u0 = (**np1).connecting_springs[i2]->u0; // rest distance (for which there is no spring force)
-            double u = d - u0; // spring extension distance
+            const double u0 = (**np1).connecting_springs[i2]->u0; // rest distance (for which there is no spring force)
+            const double u = d - u0; // spring extension distance
 
-            double k = (**np1).connecting_springs[i2]->k; // spring constant
-            double b = (**np1).connecting_springs[i2]->b; // dampening factor
+            const double k = (**np1).connecting_springs[i2]->k; // spring constant
+            const double b = (**np1).connecting_springs[i2]->b; // dampening factor
 
             if (i2 < i1) 
             {

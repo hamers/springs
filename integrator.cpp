@@ -18,7 +18,7 @@ void Node_Collection::integrate(double t_end)
         }
 
         this->t += dt;
-        this->integrator->integrate_step(this->nodes, dt, *this->parameters); // This will use the old dt, and update dt for the next loop iteration
+        this->integrator->integrate_step(this->nodes, dt, *(this->parameters)); // This will use the old dt, and update dt for the next loop iteration
                 
         if (this->parameters->verbose_flag > 1)
         {
@@ -27,14 +27,14 @@ void Node_Collection::integrate(double t_end)
     }
 }
 
-void Integrator::compute_node_vel_acc_at_given_pos_vel(std::vector<Node *> &nodes, const Node node, Vector pos, Vector vel, Vector &vel_out, Vector &acc_out, const Parameters &parameters)
+void Integrator::compute_node_vel_acc_at_given_pos_vel(const std::vector<Node *> &nodes, const Node node, Vector pos, Vector vel, Vector &vel_out, Vector &acc_out, const Parameters &parameters)
 {
-    double m = node.mass;
+    const double m = node.mass;
     vel_out = vel;
     acc_out = Vector(0.0,0.0,0.0);
 
     Vector r_vec = pos - parameters.SMBH_pos;
-    double r = r_vec.norm();
+    const double r = r_vec.norm();
     acc_out += r_vec * (-parameters.CONST_G * parameters.SMBH_mass) / (r*r*r);
 
     int i2 = 0;
@@ -42,14 +42,14 @@ void Integrator::compute_node_vel_acc_at_given_pos_vel(std::vector<Node *> &node
     {
        Vector d_vec = (**np2).pos - pos; // `distance vector': points from input node to node 2
        Vector v_vec = (**np2).vel - vel; // relative velocity vector
-       double v = v_vec.norm();
-       double d = d_vec.norm(); // distance between nodes
+       const double v = v_vec.norm();
+       const double d = d_vec.norm(); // distance between nodes
        Vector d_vec_hat = d_vec / d; // normalised distance vector
-       double u0 = node.connecting_springs[i2]->u0; // rest distance (for which there is no spring force)
-       double u = d - u0; // spring extension distance
+       const double u0 = node.connecting_springs[i2]->u0; // rest distance (for which there is no spring force)
+       const double u = d - u0; // spring extension distance
 
-       double k = node.connecting_springs[i2]->k; // spring constant
-       double b = node.connecting_springs[i2]->b; // dampening factor
+       const double k = node.connecting_springs[i2]->k; // spring constant
+       const double b = node.connecting_springs[i2]->b; // dampening factor
 
        acc_out += d_vec_hat * k * u / m; // acceleration due to spring force
        acc_out += v_vec * b / m; // acceleration due to spring dampening
@@ -84,8 +84,8 @@ void Integrator_RK4::integrate_step(std::vector<Node *> &nodes, double &dt, cons
     std::vector<Vector> k_vels; // temporary container for velocities
     std::vector<Vector> k_accs; // temporary container for accelerations
        
-    double half_dt = dt * CONST_1DIV_2;
-    double sixth_dt = dt * CONST_1DIV_6;
+    const double half_dt = dt * CONST_1DIV_2;
+    const double sixth_dt = dt * CONST_1DIV_6;
 
     int i=0;    
     for (auto np = nodes.begin(); np != nodes.end(); np++)
