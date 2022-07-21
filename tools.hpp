@@ -18,6 +18,7 @@ using owner = T;
 
 class Integrator;
 class Parameters;
+class Node_Factory;
 
 #ifndef VECTOR_H
 #define VECTOR_H
@@ -93,11 +94,7 @@ class Node_Collection
         ~Node_Collection();
 
         void set_parameters(Parameters *parameters);
-        
-        // Methods to set up specific configurations */
-        void set_up_2d_box_of_nodes(const double mass);
-        void connect_all_nodes_in_node_collection(const double k, const double b);
-        
+        void generate_nodes(Node_Factory &node_factory); // Use Factory Method to set up the nodes
         void integrate(double t_end);
 
         double get_relative_energy_error();
@@ -110,10 +107,10 @@ class Node_Collection
         Parameters *parameters; // NOT owned by Node_Collection object
         owner<Integrator> *integrator; // Owned by Node_Collection object
         
-        void set_integrator(Parameters *parameters);
-        
+        void check_for_node_collection_initialization();
+        void set_integrator();
+
         std::vector<Node*> nodes;
-        void add_node(Node* n);
         
         double t,dt;
         
@@ -126,3 +123,39 @@ class Node_Collection
 
 };
 #endif
+
+#ifndef NODE_FACTORY_H
+#define NODE_FACTORY_H
+class Node_Factory
+{
+    /* Class that contains methods to set up specific configurations (specified in subclasses) */
+    
+    public:
+        Node_Factory() {} ;
+
+        virtual std::vector<Node*> generate_nodes(const Parameters &parameters) = 0;
+        virtual std::vector<Node*> set_up_2d_box_of_nodes(const Parameters &parameters) = 0;
+        void connect_all_nodes_in_node_collection(std::vector<Node*> &nodes, const Parameters &parameters); // General function
+            
+    protected:
+        double mass_, k_, b_;
+
+};
+
+class Node_Factory_Box_of_Nodes : public Node_Factory
+{
+    public:
+        Node_Factory_Box_of_Nodes(double mass, double k, double b)
+        {
+            mass_ = mass;
+            k_ = k;
+            b_ = b;
+        }
+    private:
+        std::vector<Node*> generate_nodes(const Parameters &parameters);
+        std::vector<Node*> set_up_2d_box_of_nodes(const Parameters &parameters);
+};
+
+#endif
+
+

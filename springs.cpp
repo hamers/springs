@@ -40,9 +40,9 @@ void ClientCode(int argc, char *argv[])
     std::cout << "m " << m << " k " << k << " b " << b << " integration scheme " << parameters.integration_scheme << " output filename " << parameters.output_filename << std::endl;
 
     Node_Collection node_collection = Node_Collection(&parameters);
-    node_collection.set_up_2d_box_of_nodes(m);
-    node_collection.connect_all_nodes_in_node_collection(k, b);
-    
+    Node_Factory_Box_of_Nodes node_factory = Node_Factory_Box_of_Nodes(m,k,b);
+    node_collection.generate_nodes(node_factory);
+
     node_collection.file_dump();
     
     std::cout << "Node collection initialization complete" << std::endl;

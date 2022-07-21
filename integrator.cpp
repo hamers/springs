@@ -5,6 +5,8 @@
 
 void Node_Collection::integrate(double t_end)
 {
+    this->check_for_node_collection_initialization();
+    
     if (t_end - this->t >= this->dt) // Make sure the internal time does not overshoot the user-desired end time
     {
         this->dt = this->t - t_end;

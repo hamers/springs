@@ -3,6 +3,10 @@
 #include "parameters.hpp"
 #include "springs.hpp"
 
+/*************************
+******** Vector **********
+/************************/
+
 double Vector::norm()
 {
     return sqrt(x*x + y*y + z*z);
@@ -81,6 +85,11 @@ void Vector::print()
     std::cout << "x = " << x << "; y = " << y << "; z = " << z << std::endl;
 };
 
+
+/*************************
+******** Node **********
+/************************/
+
 Node::Node()
 {
     index = max_index;
@@ -141,6 +150,11 @@ int Node::get_number_of_neighbours()
     return connected_nodes.size();
 };
 
+
+/*************************
+******** Spring **********
+/************************/
+
 Spring::Spring()
 {
     k = 0.0;
@@ -158,10 +172,15 @@ Spring::~Spring()
     //std::cout << "Destructing Spring" << std::endl;
 }
 
+
+/**********************************
+******** Node_Collection **********
+/*********************************/
+
 Node_Collection::Node_Collection(Parameters *parameters)
 {
     this->set_parameters(parameters);
-    this->set_integrator(this->parameters);
+    this->set_integrator();
     
     t = 0.0;
     output_file_created = false;
@@ -197,12 +216,23 @@ void Node_Collection::set_parameters(Parameters *parameters)
     this->parameters = parameters;
 }
 
-void Node_Collection::add_node(Node* n)
+void Node_Collection::check_for_node_collection_initialization()
 {
-    this->nodes.push_back(n);
-};
+    try
+    {
+        if (this->nodes.size() == 0)
+        {
+            throw 1;
+        }
+    }
+    catch (int e)
+    {
+        std::cout << "Invalid size (0) of Node Collection! Please first initialize the Node Collection" << std::endl;
+        exit(-1);
+    }
+}
 
-void Node_Collection::set_integrator(Parameters *parameters)
+void Node_Collection::set_integrator()
 {
     this->integrator = new Integrator_Euler();
     if (this->parameters->integration_scheme == 1)
@@ -225,6 +255,8 @@ void Node_Collection::print()
 
 void Node_Collection::file_dump()
 {
+    this->check_for_node_collection_initialization();
+    
     const int N_nodes = this->nodes.size();
 
     if (this->output_file_created == false)
@@ -263,21 +295,39 @@ void Node_Collection::file_dump()
         }
         file.close();
     }
-        
 }
 
-void Node_Collection::set_up_2d_box_of_nodes(const double mass)
+void Node_Collection::generate_nodes(Node_Factory &node_factory)
 {
+    this->nodes = node_factory.generate_nodes(*(this->parameters));
+    this->initial_energy = this->calculate_energy();
+}
+
+
+/*******************************
+******** Node_Factory **********
+/******************************/
+
+std::vector<Node*> Node_Factory_Box_of_Nodes::generate_nodes(const Parameters &parameters)
+{
+    std::vector<Node*> nodes = this->set_up_2d_box_of_nodes(parameters);
+    this->connect_all_nodes_in_node_collection(nodes, parameters);
+    return nodes;
+}
+
+std::vector<Node*> Node_Factory_Box_of_Nodes::set_up_2d_box_of_nodes(const Parameters &parameters)
+{
+    std::vector<Node*> nodes;
     
     std::uniform_real_distribution<> dis(-1.0, 1.0);
-    std::mt19937 rng(this->parameters->random_seed); //Standard mersenne_twister_engine (default seed 0)
+    std::mt19937 rng(parameters.random_seed); //Standard mersenne_twister_engine (default seed 0)
 
-    const int Nx = this->parameters->Nx;
-    const int Ny = this->parameters->Ny;
+    const int Nx = parameters.Nx;
+    const int Ny = parameters.Ny;
     
     const double fx = 1.0/((double) Nx);
     const double fy = 1.0/((double) Ny);
-    const double f_rand_vel = this->parameters->f_rand_vel;
+    const double f_rand_vel = parameters.f_rand_vel;
     
     Vector vel_av(0,0,0);
     for (int ix=0; ix<Nx; ix++)
@@ -288,34 +338,35 @@ void Node_Collection::set_up_2d_box_of_nodes(const double mass)
             Vector vel(f_rand_vel*dis(rng),f_rand_vel*dis(rng),0);
             vel_av += vel;
 
-            Node *n = new Node(pos,vel,mass);
-            this->add_node(n);        
+            Node *n = new Node(pos,vel,this->mass_);
+            nodes.push_back(n);
         }
     }
     
     vel_av / ((double) (Nx*Ny));
     std::cout << "Average velocity of initiated nodes: " << std::endl;
     vel_av.print();
+    
+    return nodes;
 }
-
-void Node_Collection::connect_all_nodes_in_node_collection(const double k, const double b)
+void Node_Factory::connect_all_nodes_in_node_collection(std::vector<Node*> &nodes, const Parameters &parameters)
 {
     /* Double-loop over all nodes in the system and connect all pairs (except self-pairs),
      * taking k and b to be the same for all nodes. */
-    for (auto &np1 : this->nodes)
+
+    for (auto &np1 : nodes)
     {
-        for (auto &np2 : this->nodes)
+        for (auto &np2 : nodes)
         {
             if (np1 != np2) // avoid self-pairs
             {
                 double u0 = ((*np2).pos - (*np1).pos).norm(); // rest distance for which there is no spring force
-                Spring *spring = new Spring(k, b, u0);
+                Spring *spring = new Spring(this->k_, this->b_, u0);
 
                 (*np1).connect_node(np2, spring);
             }
         }
     }
-    this->initial_energy = this->calculate_energy();
 }
 
 double Node_Collection::get_relative_energy_error()
@@ -370,7 +421,5 @@ double Node_Collection::calculate_energy()
             }
        }
     }
-    
     return energy;
 }
-
